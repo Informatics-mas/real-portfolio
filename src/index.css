@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .neon-border-gradient {
+    background: linear-gradient(var(--rotate), #9333ea, #3b82f6 43%, #06b6d4);
+  }
+  
+  /* Animation de rotation pour les bordures */
+  @keyframes spin {
+    0% { --rotate: 0deg; }
+    100% { --rotate: 360deg; }
+  }
+
+  .glow-shadow-purple {
+    box-shadow: 0 0 25px -5px rgba(147, 51, 234, 0.4);
+  }
+
+  /* Cache les barres de défilement pour un look "App" */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+property --rotate {
+  syntax: "<angle>";
+  initial-value: 132deg;
+  inherits: false;
+}

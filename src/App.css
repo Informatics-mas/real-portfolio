@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Configuration spécifique pour Tailwind V4 */
+@theme {
+  --color-dark: #050505;
+  --color-neon-purple: #9333ea;
+  --color-neon-blue: #3b82f6;
+  --color-neon-cyan: #06b6d4;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* Déclaration de la variable pour l'animation de bordure */
+@property --rotate {
+  syntax: "<angle>";
+  initial-value: 132deg;
+  inherits: false;
+}
+
+/* Animation de rotation */
+@keyframes spin {
+  0% { --rotate: 0deg; }
+  100% { --rotate: 360deg; }
+}
+
+.neon-border-gradient {
+  background: linear-gradient(var(--rotate), #9333ea, #3b82f6 43%, #06b6d4);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #050505;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Cache la scrollbar mais permet le scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-card {
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  /* On force le rendu des navigateurs pour le blur */
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+/* On lisse les transitions des inputs */
+input, textarea {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Forme Hexagonale */
+.clip-path-hexagon {
+  clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 100% 100%, 25% 100%, 0% 50%);
+}
+
+/* Animation douce pour les orbes */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
