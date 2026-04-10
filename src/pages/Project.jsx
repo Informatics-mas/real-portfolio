@@ -96,11 +96,19 @@ const Projects = () => {
     },
     {
       title: "LE BUVONS DU CATHO",
-      description: "Plateforme interactive conçue pour digitaliser l'expérience du festival et faciliter l'organisation logistique de l'événement.",
+      description: "Une Plateforme interactive conçue pour digitaliser l'expérience du festival et faciliter l'organisation logistique de l'événement.",
       tags: ["React", "Tailwind CSS", "Node.js", "Express", "MongoDB"],
       image: "/images/projects/buvons-preview.png", // Chemin vers ton image
       demoLink: "https://buvons-du-catho.vercel.app/",
-      codeLink: "https://informatics-mas.github.io/buvons-du-catho"
+      codeLink: "https://github.com/Informatics-mas/buvons-du-catho"
+    },
+    {
+      title: "CV.Craft",
+      description: "Une application web innovante qui transforme la création de CV en une expérience interactive et personnalisée, permettant aux utilisateurs de concevoir des CV modernes et professionnels en quelques clics.",
+      tags: ["React", "Tailwind CSS"],
+      image: "/images/projects/cv-craft-preview.png", // Chemin vers ton image
+      demoLink: "https://react-cv-app-tau.vercel.app/",
+      codeLink: "https://github.com/Informatics-mas/react-cv-app"
     }
   ];
 

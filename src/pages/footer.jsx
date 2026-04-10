@@ -46,7 +46,7 @@ const Footer = () => (
         </p>
         <div className="flex justify-center items-center gap-2 text-[8px] text-cyan-500/50 tracking-widest uppercase">
             <span className="w-8 h-[1px] bg-cyan-500/20"></span>
-            Développeur Full Stack • Tous droits réservés
+            Développeur Full Stack • Tous droits réservés @Informatics-mas
             <span className="w-8 h-[1px] bg-cyan-500/20"></span>
         </div>
     </div>

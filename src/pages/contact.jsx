@@ -55,14 +55,14 @@ const Contact = () => {
         <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-cyan-600/10 blur-[100px] rounded-full" />
 
         <div className="text-center mb-16 relative z-10">
-          <h2 className="text-5xl font-bold mb-4 tracking-tighter italic uppercase">Initialiser la Connexion //</h2>
+          <h2 className="text-4xl font-bold mb-4 tracking-tighter italic uppercase">Vous avez un projet? ecrivez-moi //</h2>
           <p className="text-gray-500 tracking-[0.4em] uppercase text-[10px] font-bold">Architecture & Développement</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] tracking-[0.3em] text-cyan-400/60 ml-2 uppercase font-black">Identité</label>
+              <label className="text-[10px] tracking-[0.3em] text-cyan-400/60 ml-2 uppercase font-black">Nom</label>
               <input 
                 type="text" 
                 name="name"
@@ -74,7 +74,7 @@ const Contact = () => {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] tracking-[0.3em] text-cyan-400/60 ml-2 uppercase font-black">Canal</label>
+              <label className="text-[10px] tracking-[0.3em] text-cyan-400/60 ml-2 uppercase font-black">Email</label>
               <input 
                 type="email" 
                 name="email"
@@ -88,7 +88,7 @@ const Contact = () => {
           </div>
 
           <div className="space-y-3">
-            <label className="text-[10px] tracking-[0.3em] text-purple-400/60 ml-2 uppercase font-black">Transmission</label>
+            <label className="text-[10px] tracking-[0.3em] text-purple-400/60 ml-2 uppercase font-black">Message</label>
             <textarea 
               name="message"
               required
@@ -111,7 +111,7 @@ const Contact = () => {
                   : 'bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 text-white shadow-[0_10px_40px_rgba(0,0,0,0.3)]'
                 }`}
             >
-              {isSending ? 'Envoi en cours...' : 'Envoyer la Requête'}
+              {isSending ? 'Envoi en cours...' : 'Envoyer votre message'}
             </motion.button>
 
             {/* Message de statut animé */}

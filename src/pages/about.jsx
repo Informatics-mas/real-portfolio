@@ -11,7 +11,6 @@ const SkillCard = ({ title, icons, description, gradient, index }) => (
     whileHover={{ y: -10 }}
     className="group relative p-8 rounded-[32px] bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-500 hover:border-white/10"
   >
-    {/* Effet de lueur (Glow) en arrière-plan au hover */}
     <div className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 bg-gradient-to-br ${gradient} blur-[50px]`} />
     
     <div className="relative z-10">
@@ -45,7 +44,7 @@ const About = ({ fadeInUp }) => {
     },
     {
       title: "UI / UX Design",
-      icons: "Figma",
+      icons: "Design",
       description: "Prototypes fiables et design systems centrés sur l'utilisateur.",
       gradient: "from-purple-500 to-pink-500",
     }
@@ -53,7 +52,6 @@ const About = ({ fadeInUp }) => {
 
   return (
     <section id="about" className="max-w-7xl mx-auto py-32 px-6">
-      {/* 1. BIO CARD (GLASSMORPHISM) */}
       <motion.div 
         {...fadeInUp}
         className="glass-card relative p-12 md:p-16 rounded-[48px] border border-white/10 bg-white/[0.01] backdrop-blur-3xl mb-20 overflow-hidden"
