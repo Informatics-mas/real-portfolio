@@ -78,15 +78,17 @@ const Skills = () => {
             <ProgressBar name="React " level={25} isPurple={false} />
             <ProgressBar name="Node.js " level={20} isPurple={true} />
             <ProgressBar name="CSS" level={50} isPurple={false} />
-            <ProgressBar name="Figma" level={15} isPurple={true} />
+            <ProgressBar name="Figma" level={20} isPurple={true} />
             <ProgressBar name="HTML" level={70} isPurple={false} />
-            <ProgressBar name="Tailwind CSS" level={20} isPurple={true} />
+            <ProgressBar name="Tailwind CSS" level={30} isPurple={true} />
+            <ProgressBar name="Next.js" level={15} isPurple={true} />
+            <ProgressBar name="TypeScript" level={25} isPurple={true} />
           </div>
         </div>
 
         {/* PARTIE DROITE : CIRCULAR METRICS */}
         <div className="grid grid-cols-2 gap-12">
-          <CircularMetric value="02" label="Années" sublabel="Expérience" index={0} />
+          <CircularMetric value="03" label="Années" sublabel="Expérience" index={0} />
           <CircularMetric value="plusieurs" label="Projets" sublabel="réalisés" index={1} />
         </div>
 
