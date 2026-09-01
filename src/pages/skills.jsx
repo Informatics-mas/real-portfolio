@@ -81,7 +81,7 @@ const Skills = () => {
             <ProgressBar name="Figma" level={20} isPurple={true} />
             <ProgressBar name="HTML" level={70} isPurple={false} />
             <ProgressBar name="Tailwind CSS" level={30} isPurple={true} />
-            <ProgressBar name="Next.js" level={15} isPurple={true} />
+            <ProgressBar name="Next.js" level={15} isPurple={false} />
             <ProgressBar name="TypeScript" level={25} isPurple={true} />
           </div>
         </div>
