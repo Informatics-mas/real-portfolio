@@ -1,97 +1,152 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+} from 'framer-motion';
+import MagneticButton from './MagneticButton';
 import profilePic from './image/profile.png';
 
-const Hero = ({ fadeInUp }) => {
+const EASE = [0.22, 1, 0.36, 1];
+
+// Révèle un texte lettre par lettre, masqué par le bas
+const RevealText = ({ text, delay = 0, className = '' }) => (
+  <span className={`block overflow-hidden pb-[0.08em] ${className}`}>
+    <span className="sr-only">{text}</span>
+    <span aria-hidden="true" className="flex justify-center">
+      {text.split('').map((char, i) => (
+        <motion.span
+          key={i}
+          className="inline-block"
+          initial={{ y: '110%' }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.8, delay: delay + i * 0.05, ease: EASE }}
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </span>
+  </span>
+);
+
+const Hero = () => {
+  const sectionRef = useRef(null);
+  const reduce = useReducedMotion();
+
+  // --- Halo qui suit la souris ---
+  const startX = typeof window !== 'undefined' ? window.innerWidth / 2 - 300 : 0;
+  const mx = useMotionValue(startX);
+  const my = useMotionValue(120);
+  const glowX = useSpring(mx, { stiffness: 70, damping: 20 });
+  const glowY = useSpring(my, { stiffness: 70, damping: 20 });
+
+  const handleMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mx.set(e.clientX - rect.left - 300);
+    my.set(e.clientY - rect.top - 300);
+  };
+
+  // --- Parallaxe : chaque couche bouge à sa propre vitesse pendant le scroll ---
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+  const photoY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -90]);
+  const titleY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 50]);
+  const glowParallaxY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 160]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden">
-      
-      {/* 1. ANIMATED BACKGROUND ORBS */}
-      <div className="absolute inset-0 z-0">
-        <motion.div 
-          animate={{ 
-            x: [0, 100, 0], 
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1] 
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 blur-[120px] rounded-full"
+    <section
+      id="top"
+      ref={sectionRef}
+      onMouseMove={handleMove}
+      className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 overflow-hidden"
+    >
+      <motion.div
+        aria-hidden="true"
+        style={{ y: glowParallaxY }}
+        className="pointer-events-none absolute inset-0"
+      >
+        <motion.div
+          style={{ x: glowX, y: glowY }}
+          className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full bg-violet-600/15 blur-[120px]"
         />
-        <motion.div 
-          animate={{ 
-            x: [0, -100, 0], 
-            y: [0, -50, 0],
-            scale: [1, 1.3, 1] 
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/10 blur-[150px] rounded-full"
-        />
-      </div>
+      </motion.div>
 
-      <div className="relative z-10 flex flex-col items-center">
-        
-        {/* 2. HEXAGONAL IMAGE WITH NEON GRADIENT */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: "backOut" }}
-          className="relative w-48 h-48 md:w-64 md:h-64 mb-12 group"
-        >
-          {/* Neon Glow Background */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-cyan-400 rounded-full blur-2xl opacity-20 group-hover:opacity-60 transition-opacity duration-700" />
-          
-          {/* Hexagon Mask */}
-          <div className="relative w-full h-full bg-gradient-to-tr from-purple-600 to-cyan-400 p-[2px] clip-path-hexagon">
-            <div className="w-full h-full bg-[#050505] clip-path-hexagon overflow-hidden">
-              <img 
-                src={profilePic}
-                alt="Ogou David R."
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100"
-              />
+      <motion.div
+        style={{ opacity: contentOpacity }}
+        className="relative z-10 flex flex-col items-center text-center"
+      >
+        {/* Photo hexagonale (monte plus vite que le reste au scroll) */}
+        <motion.div style={{ y: photoY }} className="mb-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, ease: EASE }}
+            className="relative w-40 h-40 md:w-52 md:h-52 group"
+          >
+            <div className="absolute inset-0 bg-violet-500 rounded-full blur-2xl opacity-20 group-hover:opacity-50 transition-opacity duration-700" />
+            <div className="relative w-full h-full bg-gradient-to-tr from-violet-500 to-cyan-400 p-[2px] clip-path-hexagon">
+              <div className="w-full h-full bg-[#050505] clip-path-hexagon overflow-hidden">
+                <img
+                  src={profilePic}
+                  alt="Portrait de Ogou David R."
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100"
+                />
+              </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
 
-        {/* 3. NAME WITH GRADIENT TEXT */}
-        <motion.h1 
-          {...fadeInUp}
-          className="text-6xl md:text-9xl font-black tracking-tighter mb-6 text-center"
-        >
-          OGOU<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 drop-shadow-[0_0_30px_rgba(147,51,234,0.3)]">
-            DAVID R.
-          </span>
-        </motion.h1>
+        {/* Le nom */}
+        <motion.div style={{ y: titleY }}>
+          <h1 className="font-display font-bold tracking-tighter leading-[0.9] text-6xl sm:text-8xl md:text-9xl mb-8">
+            <RevealText text="OGOU" delay={0.3} className="text-white" />
+            <RevealText text="DAVID R." delay={0.55} className="text-violet-400" />
+          </h1>
 
-        {/* 4. TAGLINE WITH DECORATIVE DOTS */}
-        <motion.div 
-          {...fadeInUp}
-          transition={{ delay: 0.2 }}
-          className="flex items-center gap-4 mb-12"
-        >
-          <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
-          <p className="text-gray-400 text-xs md:text-sm tracking-[0.5em] uppercase font-bold">
-            Full Stack Developer <span className="text-white/20 mx-2"></span> 
-          </p>
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 1.3, ease: EASE }}
+            className="text-gray-300 text-lg md:text-xl font-light max-w-xl mx-auto mb-2"
+          >
+            Développeur full stack
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 1.4, ease: EASE }}
+            className="text-gray-500 text-base font-light max-w-md mx-auto mb-12"
+          >
+            Je crée des sites et applications web sur mesure, de l'interface à la base de données.
+          </motion.p>
         </motion.div>
 
-        {/* 5. CTA BUTTONS (GLASSMORPHISM) */}
-        <motion.div 
-          {...fadeInUp}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col md:flex-row gap-6"
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 1.6, ease: EASE }}
+          className="flex flex-col sm:flex-row gap-4"
         >
-          <a href="#projects" className="px-10 py-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl font-black tracking-widest text-[10px] uppercase hover:bg-white/10 hover:border-cyan-500/50 transition-all shadow-xl group flex items-center gap-3">
-            Explorer les Projets
-            <span className="w-2 h-[1px] bg-cyan-500 group-hover:w-4 transition-all" />
-          </a>
-          <a href="#contact" className="px-10 py-4 bg-gradient-to-r from-purple-600/20 to-cyan-500/20 backdrop-blur-md border border-purple-500/30 rounded-2xl font-black tracking-widest text-[10px] uppercase hover:border-purple-500 transition-all text-purple-200">
-            Démarrer un Projet
-          </a>
+          <MagneticButton
+            href="#projects"
+            className="px-8 py-4 rounded-2xl bg-violet-500 text-white text-sm font-semibold hover:bg-violet-400 transition-colors"
+          >
+            Voir mes projets
+          </MagneticButton>
+          <MagneticButton
+            href="#contact"
+            className="px-8 py-4 rounded-2xl border border-white/15 text-white text-sm font-semibold hover:border-cyan-400/60 hover:bg-white/5 transition-colors"
+          >
+            Me contacter
+          </MagneticButton>
         </motion.div>
-
-      </div>
+      </motion.div>
     </section>
   );
 };

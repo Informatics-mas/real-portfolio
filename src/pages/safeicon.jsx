@@ -1,53 +1,55 @@
 import React from 'react';
-// On importe TOUT le module sous le nom Lucide
-import { 
-  FaGithub, 
-  FaLinkedin, 
-  FaEnvelope, 
-  FaBriefcase, 
-  FaMap, 
-  FaPhone, 
-  FaLink,
+import {
+  FaGithub,
+  FaLinkedin,
+  FaEnvelope,
+  FaBriefcase,
+  FaLocationDot,
+  FaPhone,
+  FaWhatsapp,
+  FaArrowUpRightFromSquare,
   FaLayerGroup,
   FaBolt,
   FaFigma,
   FaUpwork,
-  FaPen
-} from "react-icons/fa6"; // Font Awesome 6
-import { IoLayersOutline, IoHardwareChipOutline, IoPhonePortraitOutline } from "react-icons/io5";
+  FaGraduationCap,
+} from 'react-icons/fa6';
+import { IoLayersOutline, IoHardwareChipOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 
 const iconMap = {
-  // Marques & Réseaux
+  // Marques & réseaux
   Github: FaGithub,
   Linkedin: FaLinkedin,
   Mail: FaEnvelope,
   Upwork: FaUpwork,
   Briefcase: FaBriefcase,
-  
+  Whatsapp: FaWhatsapp,
+
   // Contact
-  MapPin: FaMap,
+  MapPin: FaLocationDot,
   Phone: FaPhone,
-  
-  // Interface & Projets
-  ExternalLink: FaLink,
+
+  // Interface & projets
+  ExternalLink: FaArrowUpRightFromSquare,
   Layers: FaLayerGroup,
   Zap: FaBolt,
   Layout: IoLayersOutline,
   Server: IoHardwareChipOutline,
   Smartphone: IoPhonePortraitOutline,
   Design: FaFigma,
-  Figma: FaFigma
+  Figma: FaFigma,
+  Graduation: FaGraduationCap,
 };
 
-const SafeIcon = ({ name, size = 20, className = "" }) => {
+const SafeIcon = ({ name, size = 20, className = '' }) => {
   const IconComponent = iconMap[name];
 
   if (!IconComponent) {
-    console.warn(`L'icône "${name}" n'est pas définie dans le dictionnaire React-Icons.`);
-    return <FaBolt size={size} className={className} />; // Fallback
+    console.warn(`L'icône "${name}" n'est pas définie dans iconMap.`);
+    return <FaBolt size={size} className={className} aria-hidden="true" />;
   }
 
-  return <IconComponent size={size} className={className} />;
+  return <IconComponent size={size} className={className} aria-hidden="true" />;
 };
 
 export default SafeIcon;

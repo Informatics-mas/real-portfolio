@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap');
 
 /* Configuration spécifique pour Tailwind V4 */
 @theme {
@@ -6,10 +7,44 @@
   --color-neon-purple: #9333ea;
   --color-neon-blue: #3b82f6;
   --color-neon-cyan: #06b6d4;
+
+  /* Polices : crée automatiquement les classes font-sans et font-display */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
 }
 
 :root {
   color-scheme: dark;
+}
+
+/* Défilement fluide vers les sections (liens de la navbar) */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Lenis (défilement fluide) : recommandations officielles */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Focus clavier visible (accessibilité) */
+:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+
+/* Respect du réglage "réduire les animations" de l'appareil */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Déclaration de la variable pour l'animation de bordure */

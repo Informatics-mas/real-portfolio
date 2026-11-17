@@ -1,100 +1,100 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, animate, useInView } from 'framer-motion';
 
-const ProgressBar = ({ name, level, isPurple }) => (
-  <div className="mb-8">
-    <div className="flex justify-between mb-3 text-[10px] font-black tracking-[0.3em] uppercase">
-      <span className="text-gray-400">{name}</span>
-      <span className={isPurple ? "text-purple-400" : "text-cyan-400"}>{level}%</span>
-    </div>
-    <div className="h-[3px] w-full bg-white/5 rounded-full relative overflow-hidden">
-      {/* Barre de progression avec dégradé et lueur */}
-      <motion.div 
-        initial={{ width: 0 }}
-        whileInView={{ width: `${level}%` }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-        className={`absolute h-full rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)] bg-gradient-to-r ${
-          isPurple ? "from-purple-600 to-blue-500" : "from-cyan-500 to-blue-400"
-        }`}
-      >
-        {/* Effet Shimmer (Brillance qui passe) */}
-        <motion.div 
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
-        />
-      </motion.div>
-    </div>
+// ✏️ Modifie ces valeurs avec tes vrais chiffres
+const YEARS_OF_EXPERIENCE = 3;
+const PROJECTS_DELIVERED = 5;
+
+const stack = [
+  {
+    group: 'Interface',
+    items: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'HTML', 'CSS', 'Framer Motion'],
+  },
+  {
+    group: 'Serveur et données',
+    items: ['Node.js', 'Express', 'PostgreSQL', 'MongoDB', 'Supabase'],
+  },
+  {
+    group: 'Design',
+    items: ['Figma'],
+  },
+];
+
+// Compte de 0 jusqu'à la valeur quand l'élément devient visible
+const Counter = ({ to, suffix = '' }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(0, to, {
+      duration: 1.6,
+      ease: 'easeOut',
+      onUpdate: (v) => setValue(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [inView, to]);
+
+  return (
+    <span ref={ref}>
+      {value}
+      {suffix}
+    </span>
+  );
+};
+
+const Stat = ({ value, suffix, label }) => (
+  <div className="border-t border-white/10 pt-6">
+    <p className="font-display text-6xl md:text-7xl font-bold text-white tracking-tighter">
+      <Counter to={value} suffix={suffix} />
+    </p>
+    <p className="text-gray-400 mt-2">{label}</p>
   </div>
 );
 
-const CircularMetric = ({ value, label, sublabel, index }) => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.8 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    transition={{ delay: index * 0.1 }}
-    className="relative group flex flex-col items-center"
-  >
-    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border border-white/5 flex items-center justify-center relative mb-6 transition-all duration-500 group-hover:border-cyan-500/30 group-hover:shadow-[0_0_30px_rgba(6,182,212,0.1)]">
-      {/* Cercle de progression SVG */}
-      <svg className="absolute inset-0 w-full h-full -rotate-90">
-        <circle 
-          cx="50%" cy="50%" r="48%" 
-          className="stroke-white/5 fill-none" 
-          strokeWidth="1"
-        />
-        <motion.circle 
-          cx="50%" cy="50%" r="48%" 
-          className="stroke-cyan-500 fill-none" 
-          strokeWidth="2"
-          strokeDasharray="100 100"
-          initial={{ strokeDashoffset: 100 }}
-          whileInView={{ strokeDashoffset: 20 }} // Simule 80%
-          transition={{ duration: 2, ease: "easeOut" }}
-        />
-      </svg>
-      <div className="text-center z-10">
-        <span className="text-3xl md:text-4xl font-black text-white tracking-tighter italic">{value}</span>
+const Skills = () => (
+  <section id="skills" className="max-w-7xl mx-auto py-28 px-6 scroll-mt-20">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 lg:gap-24">
+      <div className="lg:col-span-3">
+        <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
+          Technologies
+        </h2>
+        <p className="text-gray-400 text-lg font-light mb-14 max-w-lg">
+          Les outils que j'utilise au quotidien sur mes projets.
+        </p>
+
+        <div className="space-y-10">
+          {stack.map(({ group, items }, groupIndex) => (
+            <motion.div
+              key={group}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, delay: groupIndex * 0.08 }}
+            >
+              <h3 className="text-sm text-gray-500 mb-4">{group}</h3>
+              <ul className="flex flex-wrap gap-3">
+                {items.map((item) => (
+                  <li
+                    key={item}
+                    className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.02] text-gray-200 text-sm hover:border-violet-400/50 hover:text-white transition-colors"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="lg:col-span-2 flex flex-col justify-center gap-12">
+        <Stat value={YEARS_OF_EXPERIENCE} suffix=" ans" label="d'expérience en développement web" />
+        <Stat value={PROJECTS_DELIVERED} suffix="+" label="projets réalisés et mis en ligne" />
       </div>
     </div>
-    <span className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">{label}</span>
-    <span className="text-[8px] text-cyan-500/40 tracking-widest mt-1 uppercase">{sublabel}</span>
-  </motion.div>
+  </section>
 );
-
-const Skills = () => {
-  return (
-    <section className="max-w-7xl mx-auto py-32 px-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-        
-        {/* PARTIE GAUCHE : PROGRESS BARS */}
-        <div>
-          <div className="mb-16">
-            <h2 className="text-sm font-black tracking-[0.6em] text-purple-500 uppercase mb-4 italic">Capacité Technique //</h2>
-            <h3 className="text-4xl md:text-6xl font-bold tracking-tighter">Stack de <span className="text-white/20">Puissance</span></h3>
-          </div>
-          
-          <div className="space-y-4">
-            <ProgressBar name="React " level={25} isPurple={false} />
-            <ProgressBar name="Node.js " level={20} isPurple={true} />
-            <ProgressBar name="CSS" level={50} isPurple={false} />
-            <ProgressBar name="Figma" level={20} isPurple={true} />
-            <ProgressBar name="HTML" level={70} isPurple={false} />
-            <ProgressBar name="Tailwind CSS" level={30} isPurple={true} />
-            <ProgressBar name="Next.js" level={15} isPurple={false} />
-            <ProgressBar name="TypeScript" level={25} isPurple={true} />
-          </div>
-        </div>
-
-        {/* PARTIE DROITE : CIRCULAR METRICS */}
-        <div className="grid grid-cols-2 gap-12">
-          <CircularMetric value="03" label="Années" sublabel="Expérience" index={0} />
-          <CircularMetric value="plusieurs" label="Projets" sublabel="réalisés" index={1} />
-        </div>
-
-      </div>
-    </section>
-  );
-};
 
 export default Skills;
