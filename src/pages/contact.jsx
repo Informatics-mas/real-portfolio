@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from './safeicon';
+import RevealHeading from './RevealHeading';
 
 // ✏️ Réglages faciles à modifier
 const ACCESS_KEY = '73b34a12-84e1-46ab-bde0-18d732df7f08'; // clé publique Web3Forms
@@ -162,9 +163,7 @@ const Contact = () => {
             </p>
           )}
 
-          <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.05] mb-5">
-            Parlons de votre projet
-          </h2>
+          <RevealHeading className="font-display text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.05] mb-5">Parlons de votre projet</RevealHeading>
           <p className="text-gray-400 text-lg font-light leading-relaxed mb-10 max-w-md">
             Décrivez votre besoin en quelques lignes. Je vous réponds {RESPONSE_TIME}.
           </p>

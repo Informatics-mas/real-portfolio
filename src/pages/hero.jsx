@@ -115,7 +115,7 @@ const Hero = () => {
             transition={{ duration: 0.7, delay: 1.3, ease: EASE }}
             className="text-gray-300 text-lg md:text-xl font-light max-w-xl mx-auto mb-2"
           >
-            Développeur full stack
+            Développeur web.
           </motion.p>
           <motion.p
             initial={{ opacity: 0, y: 12 }}

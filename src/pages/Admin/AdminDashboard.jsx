@@ -1,74 +1,137 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient'; 
+import { supabase } from '../../lib/supabaseClient';
+
+// ✏️ Réglages
+const ADMIN_LOGIN_PATH = '/admin'; // adresse de ta page de connexion (à adapter si besoin)
+
+// Passe à true APRÈS avoir ajouté la colonne dans Supabase (SQL Editor) :
+//   alter table projects add column if not exists featured boolean default false;
+// Les projets cochés afficheront le badge « À la une » sur le site.
+const ENABLE_FEATURED = false;
+
+const EMPTY_FORM = { title: '', description: '', tags: '', demo_link: '', code_link: '', featured: false };
+
+const inputClass =
+  'w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-white placeholder-gray-600 outline-none transition-all duration-300 hover:border-white/20 focus:border-cyan-400/70 focus:bg-white/[0.05] focus:shadow-[0_0_0_4px_rgba(34,211,238,0.08)]';
+
+const Label = ({ htmlFor, children, hint }) => (
+  <label htmlFor={htmlFor} className="mb-2 block text-sm font-medium text-gray-300">
+    {children}
+    {hint && <span className="font-normal text-gray-500"> {hint}</span>}
+  </label>
+);
+
+const StatCard = ({ label, value, isLoading }) => (
+  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+    <p className="mb-3 text-sm text-gray-400">{label}</p>
+    <p className="font-display text-4xl font-bold tracking-tight text-white tabular-nums">
+      {isLoading ? '…' : value}
+    </p>
+  </div>
+);
+
+const messageStyles = {
+  success: 'border-emerald-400/20 bg-emerald-400/5 text-emerald-300',
+  error: 'border-red-400/20 bg-red-400/5 text-red-300',
+  info: 'border-cyan-400/20 bg-cyan-400/5 text-cyan-300',
+};
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(null); // { type: 'success' | 'error' | 'info', text }
   const [stats, setStats] = useState({ total: 0, today: 0, thisMonth: 0 });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [projects, setProjects] = useState([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-
   const [editingProject, setEditingProject] = useState(null);
-  const [formValues, setFormValues] = useState({
-    title: '', description: '', tags: '', demo_link: '', code_link: ''
-  });
+  const [formValues, setFormValues] = useState(EMPTY_FORM);
+  const [imagePreview, setImagePreview] = useState('');
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: viewsData, error: viewsError } = await supabase
-        .from('page_views')
-        .select('created_at');
-
-      if (!viewsError && viewsData) {
-        const total = viewsData.length;
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        let todayCount = 0;
-        let monthCount = 0;
-
-        viewsData.forEach(view => {
-          const viewDate = new Date(view.created_at);
-          const viewDateStr = viewDate.toISOString().split('T')[0];
-
-          if (viewDateStr === todayStr) todayCount++;
-          if (viewDate.getMonth() === currentMonth && viewDate.getFullYear() === currentYear) monthCount++;
-        });
-
-        setStats({ total, today: todayCount, thisMonth: monthCount });
-      }
-      setIsLoadingStats(false);
-      fetchProjects();
-    };
-
-    fetchData();
-  }, []);
-
-  const fetchProjects = async () => {
+  const loadProjects = useCallback(async () => {
     setIsLoadingProjects(true);
     const { data, error } = await supabase
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setProjects(data);
-    }
+    if (!error && data) setProjects(data);
     setIsLoadingProjects(false);
+  }, []);
+
+  const loadStats = useCallback(async () => {
+    const { data: viewsData, error } = await supabase.from('page_views').select('created_at');
+
+    if (!error && viewsData) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      let today = 0;
+      let thisMonth = 0;
+
+      viewsData.forEach((view) => {
+        const date = new Date(view.created_at);
+        if (date.toISOString().split('T')[0] === todayStr) today++;
+        if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) thisMonth++;
+      });
+
+      setStats({ total: viewsData.length, today, thisMonth });
+    }
+    setIsLoadingStats(false);
+  }, []);
+
+  // Protège la page : sans session, retour à la connexion
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        navigate(ADMIN_LOGIN_PATH, { replace: true });
+      } else {
+        setIsAuthChecked(true);
+        loadStats();
+        loadProjects();
+      }
+    });
+  }, [navigate, loadStats, loadProjects]);
+
+  // Les messages de succès disparaissent seuls
+  useEffect(() => {
+    if (message?.type !== 'success') return;
+    const timer = setTimeout(() => setMessage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  // La demande de confirmation de suppression expire après 4 secondes
+  useEffect(() => {
+    if (!pendingDeleteId) return;
+    const timer = setTimeout(() => setPendingDeleteId(null), 4000);
+    return () => clearTimeout(timer);
+  }, [pendingDeleteId]);
+
+  const resetForm = () => {
+    setEditingProject(null);
+    setFormValues(EMPTY_FORM);
+    setImagePreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate(ADMIN_LOGIN_PATH, { replace: true });
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce projet ?")) return;
     const { error } = await supabase.from('projects').delete().eq('id', id);
+    setPendingDeleteId(null);
     if (error) {
-      alert(`Erreur : ${error.message}`);
+      setMessage({ type: 'error', text: `Suppression impossible : ${error.message}` });
     } else {
-      setProjects(projects.filter(p => p.id !== id));
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      if (editingProject?.id === id) resetForm();
+      setMessage({ type: 'success', text: 'Projet supprimé.' });
     }
   };
 
@@ -79,29 +142,40 @@ export default function AdminDashboard() {
       description: project.description || '',
       tags: Array.isArray(project.tags) ? project.tags.join(', ') : '',
       demo_link: project.demo_link || '',
-      code_link: project.code_link || ''
+      code_link: project.code_link || '',
+      featured: Boolean(project.featured),
     });
+    setImagePreview(project.image_url || '');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelEdit = () => {
-    setEditingProject(null);
-    setFormValues({ title: '', description: '', tags: '', demo_link: '', code_link: '' });
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormValues((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormValues(prev => ({ ...prev, [name]: value }));
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImagePreview(editingProject?.image_url || '');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setMessage("Traitement en cours...");
+    setMessage({ type: 'info', text: 'Enregistrement en cours…' });
 
-    const tagsArray = formValues.tags.split(',').map(tag => tag.trim());
-    const imageFile = e.target.image_file.files[0];
-    let imageUrl = editingProject ? editingProject.image_url : "";
+    const tagsArray = formValues.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    const imageFile = fileInputRef.current?.files?.[0];
+    let imageUrl = editingProject ? editingProject.image_url : '';
 
     if (imageFile) {
       const fileExt = imageFile.name.split('.').pop();
@@ -111,199 +185,272 @@ export default function AdminDashboard() {
         .upload(fileName, imageFile);
 
       if (uploadError) {
-        setMessage(`Erreur upload image : ${uploadError.message}`);
+        setMessage({ type: 'error', text: `Envoi de l'image impossible : ${uploadError.message}` });
         setIsSubmitting(false);
         return;
       }
-      const { data: publicURLData } = supabase.storage
-        .from('project-images')
-        .getPublicUrl(fileName);
+      const { data: publicURLData } = supabase.storage.from('project-images').getPublicUrl(fileName);
       imageUrl = publicURLData.publicUrl;
     }
 
     const projectData = {
-      title: formValues.title, description: formValues.description,
-      tags: tagsArray, image_url: imageUrl,
-      demo_link: formValues.demo_link, code_link: formValues.code_link
+      title: formValues.title,
+      description: formValues.description,
+      tags: tagsArray,
+      image_url: imageUrl,
+      demo_link: formValues.demo_link,
+      code_link: formValues.code_link,
+      ...(ENABLE_FEATURED ? { featured: formValues.featured } : {}),
     };
 
-    if (editingProject) {
-      const { error } = await supabase.from('projects').update(projectData).eq('id', editingProject.id);
-      if (error) setMessage(`Erreur : ${error.message}`);
-      else {
-        setMessage("Projet mis à jour avec succès !");
-        setEditingProject(null);
-        handleCancelEdit();
-        fetchProjects();
-      }
+    const { error } = editingProject
+      ? await supabase.from('projects').update(projectData).eq('id', editingProject.id)
+      : await supabase.from('projects').insert([projectData]);
+
+    if (error) {
+      setMessage({ type: 'error', text: `Erreur : ${error.message}` });
     } else {
-      const { error } = await supabase.from('projects').insert([projectData]);
-      if (error) setMessage(`Erreur : ${error.message}`);
-      else {
-        setMessage("Projet ajouté avec succès !");
-        handleCancelEdit();
-        fetchProjects();
-      }
+      setMessage({
+        type: 'success',
+        text: editingProject ? 'Projet mis à jour.' : 'Projet ajouté.',
+      });
+      resetForm();
+      loadProjects();
     }
     setIsSubmitting(false);
   };
 
+  if (!isAuthChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050505]" role="status" aria-label="Vérification de la session">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden selection:bg-cyan-500/30">
-      
-      {/* Background Ambient Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-purple-900/10 blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-900/10 blur-[120px]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#050505] p-6 text-white selection:bg-violet-500/30 md:p-10">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute left-[-10%] top-[-20%] h-[50vw] w-[50vw] rounded-full bg-violet-900/10 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] h-[50vw] w-[50vw] rounded-full bg-cyan-900/10 blur-[120px]" />
       </div>
 
-      <div className="max-w-5xl mx-auto relative z-10">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 border-b border-white/5 pb-8">
+      <div className="relative z-10 mx-auto max-w-5xl">
+        {/* En-tête */}
+        <header className="mb-12 flex flex-col items-start justify-between gap-6 border-b border-white/5 pb-8 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="h-[2px] w-8 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></span>
-              <span className="text-cyan-500 text-[10px] font-black tracking-[0.4em] uppercase">Espace Sécurisé</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-white">
-              Terminal <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Admin</span>
+            <p className="mb-2 text-sm text-violet-300">Espace administrateur</p>
+            <h1 className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
+              Tableau de bord
             </h1>
           </div>
-          <button onClick={() => navigate('/')} className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/20 text-xs font-bold tracking-widest uppercase flex items-center gap-2 group">
-            <span className="group-hover:-translate-x-1 transition-transform">←</span> Retour au site
-          </button>
-        </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/')}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-gray-200 transition-colors hover:border-white/25 hover:text-white"
+            >
+              Voir le site
+            </button>
+            <button
+              onClick={handleLogout}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-gray-200 transition-colors hover:border-red-400/40 hover:text-red-300"
+            >
+              Se déconnecter
+            </button>
+          </div>
+        </header>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="group relative bg-white/[0.02] backdrop-blur-xl border border-white/5 p-8 rounded-[32px] hover:bg-white/[0.04] hover:border-cyan-500/30 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-            <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <p className="relative z-10 text-[10px] tracking-widest text-gray-500 uppercase font-black mb-3">Vues Aujourd'hui</p>
-            <h3 className="relative z-10 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{isLoadingStats ? '...' : stats.today}</h3>
-          </div>
-          <div className="group relative bg-white/[0.02] backdrop-blur-xl border border-white/5 p-8 rounded-[32px] hover:bg-white/[0.04] hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-            <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <p className="relative z-10 text-[10px] tracking-widest text-gray-500 uppercase font-black mb-3">Vues ce Mois</p>
-            <h3 className="relative z-10 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{isLoadingStats ? '...' : stats.thisMonth}</h3>
-          </div>
-          <div className="group relative bg-white/[0.02] backdrop-blur-xl border border-white/5 p-8 rounded-[32px] hover:bg-white/[0.04] hover:border-white/30 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <p className="relative z-10 text-[10px] tracking-widest text-gray-500 uppercase font-black mb-3">Vues Totales</p>
-            <h3 className="relative z-10 text-5xl font-black text-white">{isLoadingStats ? '...' : stats.total}</h3>
-          </div>
-        </div>
+        <section aria-label="Statistiques" className="mb-12 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatCard label="Vues aujourd'hui" value={stats.today} isLoading={isLoadingStats} />
+          <StatCard label="Vues ce mois" value={stats.thisMonth} isLoading={isLoadingStats} />
+          <StatCard label="Vues au total" value={stats.total} isLoading={isLoadingStats} />
+          <StatCard label="Projets publiés" value={projects.length} isLoading={isLoadingProjects} />
+        </section>
 
         {/* Formulaire */}
-        <div className="bg-white/[0.02] backdrop-blur-xl border border-white/5 p-8 md:p-10 rounded-[32px] mb-12 relative shadow-2xl">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-              {editingProject ? "Mise à jour du projet" : "Nouveau Déploiement"}
+        <section className="mb-12 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-10">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+              {editingProject ? `Modifier « ${editingProject.title} »` : 'Ajouter un projet'}
             </h2>
             {editingProject && (
-              <button onClick={handleCancelEdit} className="text-[10px] px-4 py-2 bg-white/5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 uppercase tracking-widest font-black transition-all">
-                ✕ Annuler
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-gray-300 transition-colors hover:border-white/25 hover:text-white"
+              >
+                Annuler
               </button>
             )}
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-2">Titre du projet</label>
-                <input type="text" name="title" required value={formValues.title} onChange={handleInputChange} className="w-full bg-white/[0.03] border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/[0.05] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all text-white placeholder:text-gray-700" placeholder="Ex: Otaku World" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <Label htmlFor="project-title">Titre du projet</Label>
+                <input id="project-title" type="text" name="title" required value={formValues.title} onChange={handleInputChange} className={inputClass} placeholder="Ex : Otaku World" />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-2">Technologies (Tags)</label>
-                <input type="text" name="tags" required value={formValues.tags} onChange={handleInputChange} className="w-full bg-white/[0.03] border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/[0.05] focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all text-white placeholder:text-gray-700" placeholder="React, Tailwind, Supabase..." />
+              <div>
+                <Label htmlFor="project-tags" hint="(séparées par des virgules)">Technologies</Label>
+                <input id="project-tags" type="text" name="tags" required value={formValues.tags} onChange={handleInputChange} className={inputClass} placeholder="React, Tailwind, Supabase" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-2">Description</label>
-              <textarea name="description" required rows="4" value={formValues.description} onChange={handleInputChange} className="w-full bg-white/[0.03] border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/[0.05] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all text-white placeholder:text-gray-700 resize-none" placeholder="Décrivez les fonctionnalités principales du projet..."></textarea>
+            <div>
+              <Label htmlFor="project-description">Description</Label>
+              <textarea id="project-description" name="description" required rows={4} value={formValues.description} onChange={handleInputChange} className={`${inputClass} resize-none`} placeholder="Quel problème résout ce projet ? Quelles sont ses fonctionnalités principales ?" />
             </div>
-            
-            <div className="space-y-2 p-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] hover:bg-white/[0.02] transition-colors group">
-              <label className="text-[10px] uppercase tracking-widest text-cyan-500 font-black mb-2 block cursor-pointer">
-                {editingProject ? "📸 Remplacer l'image (Optionnel)" : "📸 Uploader une image"}
+
+            {/* Image */}
+            <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.01] p-5">
+              <Label htmlFor="project-image" hint={editingProject ? '(laisser vide pour garder l\'actuelle)' : ''}>
+                Capture d'écran
+              </Label>
+              <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Aperçu de l'image du projet" className="h-24 w-40 shrink-0 rounded-xl border border-white/10 object-cover object-top" />
+                ) : (
+                  <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs text-gray-500">
+                    Aucune image
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  id="project-image"
+                  type="file"
+                  name="image_file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full cursor-pointer text-sm text-gray-400 file:mr-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-white/10 file:px-5 file:py-2.5 file:text-sm file:font-medium file:text-white hover:file:bg-white/20"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <Label htmlFor="project-demo" hint="(facultatif)">Lien vers le site</Label>
+                <input id="project-demo" type="url" name="demo_link" value={formValues.demo_link} onChange={handleInputChange} className={inputClass} placeholder="https://…" />
+              </div>
+              <div>
+                <Label htmlFor="project-code" hint="(facultatif)">Lien vers le code</Label>
+                <input id="project-code" type="url" name="code_link" value={formValues.code_link} onChange={handleInputChange} className={inputClass} placeholder="https://github.com/…" />
+              </div>
+            </div>
+
+            {ENABLE_FEATURED && (
+              <label className="flex cursor-pointer items-center gap-3 text-sm text-gray-300">
+                <input type="checkbox" name="featured" checked={formValues.featured} onChange={handleInputChange} className="h-4 w-4 accent-violet-500" />
+                Mettre ce projet à la une
               </label>
-              <input type="file" name="image_file" accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer" />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-2">Lien vers le site (Demo)</label>
-                <input type="url" name="demo_link" value={formValues.demo_link} onChange={handleInputChange} className="w-full bg-white/[0.03] border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/[0.05] focus:border-cyan-500/50 transition-all text-white placeholder:text-gray-700" placeholder="https://..." />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-2">Lien vers le code (Github)</label>
-                <input type="url" name="code_link" value={formValues.code_link} onChange={handleInputChange} className="w-full bg-white/[0.03] border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/[0.05] focus:border-purple-500/50 transition-all text-white placeholder:text-gray-700" placeholder="https://github.com/..." />
-              </div>
-            </div>
+            )}
 
-            <button disabled={isSubmitting} type="submit" className="w-full py-5 mt-4 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 rounded-2xl font-black tracking-[0.2em] uppercase text-xs shadow-[0_0_40px_rgba(6,182,212,0.2)] hover:shadow-[0_0_60px_rgba(6,182,212,0.4)] transition-all disabled:opacity-50 active:scale-[0.98]">
-              {isSubmitting ? 'Synchronisation...' : editingProject ? 'Enregistrer les modifications' : 'Déployer le projet'}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-violet-500 px-6 py-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Enregistrement…
+                </>
+              ) : editingProject ? (
+                'Enregistrer les modifications'
+              ) : (
+                'Publier le projet'
+              )}
             </button>
-            
+
             {message && (
-              <div className="p-4 mt-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-center">
-                <p className="text-cyan-400 text-xs font-bold tracking-widest uppercase">{message}</p>
-              </div>
+              <p role={message.type === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${messageStyles[message.type]}`}>
+                {message.text}
+              </p>
             )}
           </form>
-        </div>
+        </section>
 
         {/* Liste des projets */}
-        <div className="bg-white/[0.02] backdrop-blur-xl border border-white/5 p-8 md:p-10 rounded-[32px] shadow-2xl">
-          <h2 className="text-2xl font-bold mb-8 tracking-tight text-white flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-            Base de données des projets
+        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-10">
+          <h2 className="mb-8 font-display text-2xl font-bold tracking-tight text-white">
+            Projets publiés
           </h2>
 
           {isLoadingProjects ? (
-            <div className="flex justify-center py-10">
-              <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+            <div className="flex justify-center py-10" role="status" aria-label="Chargement">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
             </div>
           ) : projects.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl">
-              <p className="text-gray-500 text-sm tracking-widest uppercase font-bold">Base de données vide</p>
+            <div className="rounded-2xl border border-dashed border-white/10 py-12 text-center">
+              <p className="text-sm text-gray-400">Aucun projet pour le moment. Ajoutez le premier ci-dessus.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {projects.map((project) => (
-                <div key={project.id} className="group flex flex-col md:flex-row items-start md:items-center justify-between bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 p-5 rounded-2xl gap-6 transition-all duration-300">
-                  <div className="flex items-center gap-5 w-full md:w-auto">
-                    {project.image_url ? (
-                      <div className="w-20 h-14 rounded-xl overflow-hidden shrink-0 border border-white/10 group-hover:border-cyan-500/30 transition-colors">
-                        <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <ul className="space-y-3">
+              {projects.map((project) => {
+                const isPending = pendingDeleteId === project.id;
+                return (
+                  <li
+                    key={project.id}
+                    className="flex flex-col items-start justify-between gap-5 rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 hover:bg-white/[0.04] md:flex-row md:items-center"
+                  >
+                    <div className="flex w-full items-center gap-4 md:w-auto">
+                      {project.image_url ? (
+                        <img src={project.image_url} alt="" className="h-14 w-20 shrink-0 rounded-xl border border-white/10 object-cover object-top" />
+                      ) : (
+                        <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[10px] text-gray-500">
+                          Sans image
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="truncate font-semibold text-white">
+                          {project.title}
+                          {project.featured && (
+                            <span className="ml-3 rounded-full border border-violet-400/30 bg-violet-500/10 px-2.5 py-0.5 text-xs font-normal text-violet-300">
+                              À la une
+                            </span>
+                          )}
+                        </h3>
+                        <p className="mt-1 line-clamp-1 max-w-md text-sm text-gray-500">{project.description}</p>
                       </div>
-                    ) : (
-                      <div className="w-20 h-14 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center shrink-0">
-                        <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest">N/A</span>
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-white text-lg group-hover:text-cyan-400 transition-colors">{project.title}</h3>
-                      <p className="text-xs text-gray-500 line-clamp-1 mt-1 max-w-md">{project.description}</p>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                    <button onClick={() => handleEditClick(project)} className="flex-1 md:flex-none px-5 py-2.5 bg-white/5 hover:bg-cyan-500/20 text-gray-300 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/30 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all">
-                      Éditer
-                    </button>
-                    <button onClick={() => handleDelete(project.id)} className="flex-1 md:flex-none px-5 py-2.5 bg-white/5 hover:bg-red-500/20 text-gray-300 hover:text-red-400 border border-white/5 hover:border-red-500/30 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all">
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
+                    <div className="flex w-full items-center justify-end gap-3 md:w-auto">
+                      <button
+                        onClick={() => handleEditClick(project)}
+                        className="flex-1 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-cyan-400/40 hover:text-cyan-300 md:flex-none"
+                      >
+                        Modifier
+                      </button>
+                      {isPending ? (
+                        <>
+                          <button
+                            onClick={() => handleDelete(project.id)}
+                            className="flex-1 rounded-xl border border-red-400/40 bg-red-500/15 px-5 py-2.5 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/25 md:flex-none"
+                          >
+                            Confirmer
+                          </button>
+                          <button
+                            onClick={() => setPendingDeleteId(null)}
+                            className="rounded-xl px-3 py-2.5 text-sm text-gray-400 transition-colors hover:text-white"
+                          >
+                            Annuler
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setPendingDeleteId(project.id)}
+                          className="flex-1 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-red-400/40 hover:text-red-300 md:flex-none"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

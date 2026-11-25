@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import SafeIcon from './safeicon';
 import { supabase } from '../lib/supabaseClient';
+import RevealHeading from './RevealHeading';
 
 const MAX_TILT = 7; // degrés d'inclinaison maximum au survol
 
@@ -183,9 +184,7 @@ const Projects = () => {
   return (
     <section id="projects" className="max-w-7xl mx-auto py-28 px-6 scroll-mt-20">
       <div className="mb-16">
-        <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
-          Projets sélectionnés
-        </h2>
+        <RevealHeading className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">Projets sélectionnés</RevealHeading>
         <p className="text-gray-400 text-lg font-light max-w-lg">
           Des applications réelles, de la conception à la mise en ligne.
         </p>

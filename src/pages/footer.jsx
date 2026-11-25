@@ -17,7 +17,7 @@ const Footer = () => (
     <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
       <div className="text-center md:text-left">
         <p className="font-display text-xl font-bold text-white tracking-tight">Ogou David R.</p>
-        <p className="text-gray-400 text-sm mt-1">Développeur full stack, Anyama (Côte d'Ivoire)</p>
+        <p className="text-gray-400 text-sm mt-1">Développeur web, Anyama (Côte d'Ivoire)</p>
       </div>
 
       <div className="flex gap-3">

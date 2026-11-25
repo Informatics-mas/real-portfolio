@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import SafeIcon from './safeicon';
+import RevealHeading from './RevealHeading';
 
 const skills = [
   {
@@ -39,9 +40,7 @@ const SkillCard = ({ title, icon, description, index }) => (
 const About = ({ fadeInUp }) => (
   <section id="about" className="max-w-7xl mx-auto py-28 px-6 scroll-mt-20">
     <motion.div {...fadeInUp} className="max-w-3xl mb-16">
-      <h2 className="font-display text-3xl md:text-5xl font-bold text-white leading-[1.1] tracking-tight mb-6">
-        Du code propre, un design soigné, des idées qui deviennent des produits.
-      </h2>
+      <RevealHeading className="font-display text-3xl md:text-5xl font-bold text-white leading-[1.1] tracking-tight mb-6">Du code propre, un design soigné, des idées qui deviennent des produits.</RevealHeading>
       <p className="text-gray-400 text-lg font-light leading-relaxed max-w-2xl">
         Je transforme vos idées en produits web fiables : une interface claire pour vos visiteurs
         et une base solide en coulisses.

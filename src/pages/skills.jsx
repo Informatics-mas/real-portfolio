@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, animate, useInView } from 'framer-motion';
+import RevealHeading from './RevealHeading';
 
 // ✏️ Modifie ces valeurs avec tes vrais chiffres
-const YEARS_OF_EXPERIENCE = 3;
-const PROJECTS_DELIVERED = 5;
+const YEARS_OF_EXPERIENCE = 2;
+const PROJECTS_DELIVERED = 4;
 
 const stack = [
   {
@@ -57,9 +58,7 @@ const Skills = () => (
   <section id="skills" className="max-w-7xl mx-auto py-28 px-6 scroll-mt-20">
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 lg:gap-24">
       <div className="lg:col-span-3">
-        <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
-          Technologies
-        </h2>
+        <RevealHeading className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">Technologies</RevealHeading>
         <p className="text-gray-400 text-lg font-light mb-14 max-w-lg">
           Les outils que j'utilise au quotidien sur mes projets.
         </p>

@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import SafeIcon from './safeicon';
+import RevealHeading from './RevealHeading';
 
 // ✏️ MODIFIE CETTE LISTE avec ton vrai parcours (du plus récent au plus ancien).
 // Ajoute, retire ou réordonne les blocs librement. `tags` est facultatif.
@@ -17,7 +18,7 @@ const parcours = [
     period: '2021 – 2022',
     type: 'Diplôme',
     title: 'BAC D',
-    place: "Lycée Moderne d\'anyama",
+    place: "Lycée Moderne d'anyama",
     city: 'Abidjan, Côte d\'Ivoire',
     description: 'baccalauréat scientifique, option D. Formation axée sur les sciences et les mathématiques.',
   },
@@ -95,9 +96,9 @@ const Parcours = () => {
           <SafeIcon name="Graduation" size={22} className="text-violet-300" />
         </div>
         <div>
-          <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
+          <RevealHeading className="font-display text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
             Parcours scolaire
-          </h2>
+          </RevealHeading>
           <p className="text-gray-400 text-lg font-light max-w-lg">
             Les formations et diplômes qui m'ont mené au développement web.
           </p>
